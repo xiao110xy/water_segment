@@ -9,11 +9,11 @@ import torchvision
 def main():
     # Define network
     model = DeepLab(num_classes=2,
-                    backbone='mobilenet',
+                    backbone='drn',
                     output_stride=8,
                     sync_bn=True,
                     freeze_bn=True)
-    checkpoint = torch.load('D:/Desktop/water/run/water/deeplab-mobilenet/model_best.pth.tar',
+    checkpoint = torch.load('D:/Desktop/water/run/water/deeplab-drn/experiment_2/checkpoint.pth.tar',
         map_location=torch.device('cpu'))
 
 
@@ -25,7 +25,7 @@ def main():
     # model = torchvision.models.resnet18()
     with torch.no_grad():
         traced_script_module = torch.jit.trace(model, example)
-        traced_script_module.save("E:/data/models/xy_4.pt")
+        traced_script_module.save("E:/models/test.pt")
         print('ok')
 
 if __name__ == "__main__":

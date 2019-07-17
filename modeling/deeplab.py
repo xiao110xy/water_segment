@@ -22,6 +22,12 @@ class DeepLab(nn.Module):
 
         self.backbone = build_backbone(backbone, output_stride, BatchNorm)
         self.aspp = build_aspp(backbone, output_stride, BatchNorm)
+        # for k in self.backbone.children():
+        #     for param in k.parameters():
+        #         param.requires_grad = False
+        # for k in self.aspp.children():
+        #     for param in k.parameters():
+        #         param.requires_grad = False
         self.decoder = build_decoder(num_classes, backbone, BatchNorm)
         self._load_pretrained_model(backbone)
         if freeze_bn:
@@ -62,7 +68,7 @@ class DeepLab(nn.Module):
                             yield p
 
     def _load_pretrained_model(self, backone):
-        pretrain_model_path = 'E:/data/models'
+        pretrain_model_path = 'models'
         # pretrain_model_path = common_path.pretrain_model_path
 
         # 打开预训练的模型文件

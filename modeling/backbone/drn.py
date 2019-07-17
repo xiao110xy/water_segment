@@ -374,7 +374,7 @@ def drn_d_40(BatchNorm, pretrained=True):
     return model
 
 
-def drn_d_54(BatchNorm, pretrained=True):
+def drn_d_54(BatchNorm, pretrained=False):
     model = DRN(Bottleneck, [1, 1, 3, 4, 6, 3, 1, 1], arch='D', BatchNorm=BatchNorm)
     if pretrained:
         pretrained = model_zoo.load_url(model_urls['drn-d-54'])

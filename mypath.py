@@ -10,12 +10,14 @@ class Path(object):
         elif dataset == 'coco':
             return 'E:/data/coco/'
         elif dataset == 'water':
-            # return ['D:/Desktop/湛江/湛江港/','E:/water_segment/water_1/']
+            return ['water/water_6/']
             # return ['D:/Desktop/湛江/湛江港/image_P3/',
             #         'D:/Desktop/湛江/湛江港/image_P4/',
             #         'D:/Desktop/湛江/湛江港/image_P1/',
             #         'D:/Desktop/湛江/湛江港/image_P2/']
-            return ['E:/water_segment/water_3/']
+            # return ['E:/water_segment/water_4/']
+            # return ['D:/Desktop/60605600/']
+
             # return ['D:/Desktop/湛江/湛江港/image_P3/','D:/Desktop/湛江/湛江港/image_P2/']
         else:
             print('Dataset {} not available.'.format(dataset))

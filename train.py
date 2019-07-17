@@ -14,6 +14,8 @@ from utils.saver import Saver
 from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
 
+from utils.xy_loss import dice_coeff
+
 class Trainer(object):
     def __init__(self, args):
         self.args = args
@@ -35,7 +37,6 @@ class Trainer(object):
                         output_stride=args.out_stride,
                         sync_bn=args.sync_bn,
                         freeze_bn=args.freeze_bn)
-
         train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},
                         {'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
 
@@ -55,6 +56,7 @@ class Trainer(object):
         else:
             weight = None
         self.criterion = SegmentationLosses(weight=weight, cuda=args.cuda).build_loss(mode=args.loss_type)
+
         self.model, self.optimizer = model, optimizer
         
         # Define Evaluator
@@ -102,7 +104,10 @@ class Trainer(object):
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             output = self.model(image)
-            loss = self.criterion(output, target)
+            loss = self.criterion(output,target)
+            # temp = torch.argmax(output,1)
+            # temp = temp[1].float()
+            # loss = dice_coeff(temp, target)
             loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
@@ -110,8 +115,9 @@ class Trainer(object):
             self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
 
             # Show 10 * 3 inference results each epoch
-            if i % (num_img_tr // 2) == 0:
+            if i % num_img_tr == 0:
                 global_step = i + num_img_tr * epoch
+
                 self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
 
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
@@ -177,7 +183,7 @@ class Trainer(object):
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
-    parser.add_argument('--backbone', type=str, default='mobilenet',
+    parser.add_argument('--backbone', type=str, default='drn',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')
     parser.add_argument('--out-stride', type=int, default=8,
@@ -205,10 +211,10 @@ def main():
                         help='number of epochs to train (default: auto)')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
-    parser.add_argument('--batch-size', type=int, default=None,
+    parser.add_argument('--batch-size', type=int,
                         metavar='N', help='input batch size for \
                                 training (default: auto)')
-    parser.add_argument('--test-batch-size', type=int, default=None,
+    parser.add_argument('--test-batch-size', type=int,
                         metavar='N', help='input batch size for \
                                 testing (default: auto)')
     parser.add_argument('--use-balanced-weights', action='store_true', default=False,
@@ -219,7 +225,7 @@ def main():
     parser.add_argument('--lr-scheduler', type=str, default='poly',
                         choices=['poly', 'step', 'cos'],
                         help='lr scheduler mode: (default: poly)')
-    parser.add_argument('--momentum', type=float, default=0.9,
+    parser.add_argument('--momentum', type=float, default=0.95,
                         metavar='M', help='momentum (default: 0.9)')
     parser.add_argument('--weight-decay', type=float, default=5e-4,
                         metavar='M', help='w-decay (default: 5e-4)')
@@ -228,13 +234,13 @@ def main():
     # cuda, seed and logging
     parser.add_argument('--no-cuda', action='store_true', default=
                         False, help='disables CUDA training')
-    parser.add_argument('--gpu-ids', type=str, default='0,1',
+    parser.add_argument('--gpu-ids', type=str, default='0',
                         help='use which gpu to train, must be a \
                         comma-separated list of integers only (default=0)')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     # checking point
-    # parser.add_argument('--resume', type=str, default='D:/Desktop/water/run/water/deeplab-drn/experiment_3/checkpoint.pth.tar',
+    # parser.add_argument('--resume', type=str, default='D:/Desktop/water/run/water/deeplab-drn/experiment_4/checkpoint.pth.tar',
     #                     help='put the path to resuming file if needed')
     parser.add_argument('--resume', type=str, default=None,
                         help='put the path to resuming file if needed')
@@ -274,10 +280,10 @@ def main():
         args.epochs = epoches[args.dataset.lower()]
 
     if args.batch_size is None:
-        args.batch_size = 4 * len(args.gpu_ids)
+        args.batch_size = 2 * len(args.gpu_ids)
 
     if args.test_batch_size is None:
-        args.test_batch_size = 4*args.batch_size
+        args.test_batch_size = 2#2*args.batch_size
 
     if args.lr is None:
         lrs = {
@@ -298,10 +304,24 @@ def main():
     print('Total Epoches:', trainer.args.epochs)
     for epoch in range(trainer.args.start_epoch, trainer.args.epochs):
         trainer.training(epoch)
+        # if epoch>800:
+        #     args.eval_interval = 1
+        # if epoch<800:
+        #     args.eval_interval = 2
+        # if epoch<600:
+        #     args.eval_interval = 4
+        # if epoch<400:
+        #     args.eval_interval = 6
+        # if epoch<200:
+        #     args.eval_interval = 8
+        # if epoch<100:
+        #     args.eval_interval = 10
+            
         if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
             trainer.validation(epoch)
 
     trainer.writer.close()
 
 if __name__ == "__main__":
-   main()
+    torch.backends.cudnn.benchmark=True
+    main()

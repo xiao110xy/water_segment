@@ -112,3 +112,8 @@ venv.bak/
 LICENSE
 .vscode/
 README.md
+*.bmp
+*.png
+*.jpg
+*.pth.tar
+*.DESKTOP-XY-PC
