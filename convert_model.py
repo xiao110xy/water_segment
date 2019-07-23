@@ -3,6 +3,7 @@ import numpy as np
 from modeling.deeplab import *
 import torch
 import torchvision
+from mypath import Path
 
 
 
@@ -13,7 +14,7 @@ def main():
                     output_stride=8,
                     sync_bn=True,
                     freeze_bn=True)
-    checkpoint = torch.load('D:/Desktop/water/run/water/deeplab-drn/experiment_2/checkpoint.pth.tar',
+    checkpoint = torch.load(Path.convert_model_path(),
         map_location=torch.device('cpu'))
 
 
@@ -25,8 +26,8 @@ def main():
     # model = torchvision.models.resnet18()
     with torch.no_grad():
         traced_script_module = torch.jit.trace(model, example)
-        traced_script_module.save("E:/models/test.pt")
-        print('ok')
+        traced_script_module.save(Path.convert_save_path())
+        print('convert file succeed')
 
 if __name__ == "__main__":
    main()

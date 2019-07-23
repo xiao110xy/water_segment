@@ -11,7 +11,6 @@ from utils.loss import SegmentationLosses
 from utils.calculate_weights import calculate_weigths_labels
 from utils.lr_scheduler import LR_Scheduler
 from utils.saver import Saver
-from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
 
 from utils.xy_loss import dice_coeff
@@ -23,10 +22,6 @@ class Trainer(object):
         # Define Saver
         self.saver = Saver(args)
         self.saver.save_experiment_config()
-        # Define Tensorboard Summary
-        self.summary = TensorboardSummary(self.saver.experiment_dir)
-        self.writer = self.summary.create_summary()
-        
         # Define Dataloader
         kwargs = {'num_workers': args.workers, 'pin_memory': True}
         self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
@@ -74,19 +69,18 @@ class Trainer(object):
         # Resuming checkpoint
         self.best_pred = 0.0
         if args.resume is not None:
-            if not os.path.isfile(args.resume):
-                raise RuntimeError("=> no checkpoint found at '{}'" .format(args.resume))
-            checkpoint = torch.load(args.resume)
-            args.start_epoch = checkpoint['epoch']
-            if args.cuda:
-                self.model.module.load_state_dict(checkpoint['state_dict'])
-            else:
-                self.model.load_state_dict(checkpoint['state_dict'])
-            if not args.ft:
-                self.optimizer.load_state_dict(checkpoint['optimizer'])
-            # self.best_pred = checkpoint['best_pred']-0.3
-            print("=> loaded checkpoint '{}' (epoch {})"
-                  .format(args.resume, checkpoint['epoch']))
+            if os.path.isfile(args.resume):
+                checkpoint = torch.load(args.resume,map_location=torch.device('cpu'))
+                args.start_epoch = checkpoint['epoch']
+                if args.cuda:
+                    self.model.module.load_state_dict(checkpoint['state_dict'])
+                else:
+                    self.model.load_state_dict(checkpoint['state_dict'])
+                if not args.ft:
+                    self.optimizer.load_state_dict(checkpoint['optimizer'])
+                # self.best_pred = checkpoint['best_pred']-0.3
+                print("=> loaded checkpoint '{}' (epoch {})"
+                    .format(args.resume, checkpoint['epoch']))
 
         # Clear start epoch if fine-tuning
         if args.ft:
@@ -112,15 +106,15 @@ class Trainer(object):
             self.optimizer.step()
             train_loss += loss.item()
             tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
-            self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
 
-            # Show 10 * 3 inference results each epoch
-            if i % num_img_tr == 0:
-                global_step = i + num_img_tr * epoch
 
-                self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
+            # # Show 10 * 3 inference results each epoch
+            # if i % num_img_tr == 0:
+            #     global_step = i + num_img_tr * epoch
 
-        self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
+            #     self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
+
+        # self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
 
@@ -160,11 +154,6 @@ class Trainer(object):
         Acc_class = self.evaluator.Pixel_Accuracy_Class()
         mIoU = self.evaluator.Mean_Intersection_over_Union()
         FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
-        self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
-        self.writer.add_scalar('val/mIoU', mIoU, epoch)
-        self.writer.add_scalar('val/Acc', Acc, epoch)
-        self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
-        self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
@@ -176,7 +165,7 @@ class Trainer(object):
             self.best_pred = new_pred
             self.saver.save_checkpoint({
                 'epoch': epoch + 1,
-                'state_dict': self.model.module.state_dict(),
+                'state_dict': self.model.state_dict(),
                 'optimizer': self.optimizer.state_dict(),
                 'best_pred': self.best_pred,
             }, is_best)
@@ -207,6 +196,7 @@ def main():
                         choices=['ce', 'focal'],
                         help='loss func type (default: ce)')
     # training hyper params
+    #
     parser.add_argument('--epochs', type=int, default=None, metavar='N',
                         help='number of epochs to train (default: auto)')
     parser.add_argument('--start_epoch', type=int, default=0,
@@ -240,10 +230,10 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     # checking point
-    # parser.add_argument('--resume', type=str, default='D:/Desktop/water/run/water/deeplab-drn/experiment_4/checkpoint.pth.tar',
-    #                     help='put the path to resuming file if needed')
-    parser.add_argument('--resume', type=str, default=None,
+    parser.add_argument('--resume', type=str, default=Path.train_model_path(),
                         help='put the path to resuming file if needed')
+    # parser.add_argument('--resume', type=str, default=None,
+    #                     help='put the path to resuming file if needed')
     parser.add_argument('--checkname', type=str, default=None,
                         help='set the checkpoint name')
     # finetuning pre-trained models
@@ -280,10 +270,10 @@ def main():
         args.epochs = epoches[args.dataset.lower()]
 
     if args.batch_size is None:
-        args.batch_size = 2 * len(args.gpu_ids)
+        args.batch_size = Path.train_batch_size()
 
     if args.test_batch_size is None:
-        args.test_batch_size = 2#2*args.batch_size
+        args.test_batch_size = Path.test_batch_size()
 
     if args.lr is None:
         lrs = {
@@ -303,24 +293,12 @@ def main():
     print('Starting Epoch:', trainer.args.start_epoch)
     print('Total Epoches:', trainer.args.epochs)
     for epoch in range(trainer.args.start_epoch, trainer.args.epochs):
-        trainer.training(epoch)
-        # if epoch>800:
-        #     args.eval_interval = 1
-        # if epoch<800:
-        #     args.eval_interval = 2
-        # if epoch<600:
-        #     args.eval_interval = 4
-        # if epoch<400:
-        #     args.eval_interval = 6
-        # if epoch<200:
-        #     args.eval_interval = 8
-        # if epoch<100:
-        #     args.eval_interval = 10
-            
+        trainer.validation(epoch)
+        trainer.training(epoch) 
         if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
             trainer.validation(epoch)
+            
 
-    trainer.writer.close()
 
 if __name__ == "__main__":
     torch.backends.cudnn.benchmark=True

@@ -1,7 +1,7 @@
 datset:water
 backbone:drn
 out_stride:8
-lr:0.0005
+lr:0.002
 lr_scheduler:poly
 loss_type:ce
 epoch:50000

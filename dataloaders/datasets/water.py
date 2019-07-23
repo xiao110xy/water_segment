@@ -15,12 +15,16 @@ class get_file(Dataset):
     
     def __init__(self,
                  args,
-                 base_dir=Path.db_root_dir('water'),
+                 base_dir = '',
                  split='train'):
         super().__init__()
-        self.batch_num = 1
         if split is 'train':
-            self.batch_num = 10
+            base_dir = Path.train_image_path()
+        else:
+            base_dir = Path.test_image_path()
+        self.batch_num = 1
+        # if split is 'train':
+        #     self.batch_num = 10
         self.split = split
         self.list = []
         self.index = []
@@ -83,13 +87,18 @@ class get_file(Dataset):
 
 
     def transform_tr(self, sample):
-        composed_transforms = transforms.Compose([
-            tr.RandomHorizontalFlip(),
-            tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size),
-            tr.RandomGaussianBlur(),
-            tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-            tr.ToTensor()])
-
+        if (sample['image'].width>self.args.base_size) and (sample['image'].height>self.args.base_size):
+            composed_transforms = transforms.Compose([
+                tr.RandomHorizontalFlip(),
+                tr.RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size),
+                tr.RandomGaussianBlur(),
+                tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                tr.ToTensor()])
+        else:
+            composed_transforms = transforms.Compose([
+                # tr.FixScaleCrop(crop_size=self.args.crop_size),
+                tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                tr.ToTensor()])
         return composed_transforms(sample)
 
     def transform_val(self, sample):

@@ -17,7 +17,6 @@ def cv_imwrite(file_path,image):
     cv2.imencode(file_path[-4:], image)[1].tofile(file_path)
 def main():
 
-
     torch.backends.cudnn.benchmark=True
     # Define network
     model = DeepLab(num_classes=2,
@@ -31,15 +30,17 @@ def main():
     # Define Optimizer
     # optimizer = torch.optim.SGD(train_params,
     #  momentum=0.9,weight_decay=0.005, nesterov =False)
-    checkpoint = torch.load('D:/Desktop/water/run/water/deeplab-drn/experiment_5/checkpoint.pth.tar')
+    if not os.path.isfile(Path.test_model_path()):
+        print('there is no *.pth.tar file')
+        return
+    checkpoint = torch.load(Path.test_model_path())
     #checkpoint = torch.load('D:/Desktop/water/run/water/deeplab-drn/model_best.pth.tar')
     model.load_state_dict(checkpoint['state_dict'])
 
     # example = torch.rand(1,3,513,513)
     # traced_script_module = torch.jit.trace(model, example)
     # traced_script_module.save('E:/data/models/xy.pt')
-    # lists = Path.db_root_dir('water')
-    lists = ['D:/Desktop/P6/']
+    lists = Path.test_image_path()
     file_list = []
     file_index = []
     for data_dir in lists:
@@ -94,21 +95,21 @@ def main():
                     g = image1[:,:,i]
                     g[pre>100] = 255
                     image1[:,:,i] = g
-                #cv_imwrite(save_name1+'.png',image1)
-                image1 = image.copy()
-                for i in [0,1,2] :
-                    g = image1[:,:,i]
-                    g[pre<100] = 0
-                    image1[:,:,i] = g
-                cv_imwrite(save_name1+'_1.png',image1)
-                image2 = image.copy()
-                for i in [0,1,2] :
-                    g = image2[:,:,i]
-                    g[pre>100] = 0
-                    image2[:,:,i] = g
-                cv_imwrite(save_name1+'_2.png',image2)
+                cv_imwrite(save_name1+'.png',image1)
+                # image1 = image.copy()
+                # for i in [0,1,2] :
+                #     g = image1[:,:,i]
+                #     g[pre<100] = 0
+                #     image1[:,:,i] = g
+                # cv_imwrite(save_name1+'_1.png',image1)
+                # image2 = image.copy()
+                # for i in [0,1,2] :
+                #     g = image2[:,:,i]
+                #     g[pre>100] = 0
+                #     image2[:,:,i] = g
+                # cv_imwrite(save_name1+'_2.png',image2)
 
-                #cv_imwrite(save_name2,pre)
+                cv_imwrite(save_name2,pre)
                 print(file_name)
 
 if __name__ == "__main__":

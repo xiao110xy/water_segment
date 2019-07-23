@@ -35,11 +35,11 @@ class Saver(object):
                             previous_miou.append(miou)
                     else:
                         continue
-                max_miou = max(previous_miou)
-                if best_pred > max_miou:
-                    shutil.copyfile(filename, os.path.join(self.directory, 'model_best.pth.tar'))
-            else:
-                shutil.copyfile(filename, os.path.join(self.directory, 'model_best.pth.tar'))
+            #     max_miou = max(previous_miou)
+            #     if best_pred > max_miou:
+            #         shutil.copyfile(filename, os.path.join(self.directory, 'model_best.pth.tar'))
+            # else:
+            #     shutil.copyfile(filename, os.path.join(self.directory, 'model_best.pth.tar'))
 
     def save_experiment_config(self):
         logfile = os.path.join(self.experiment_dir, 'parameters.txt')

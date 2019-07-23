@@ -1,24 +1,39 @@
 class Path(object):
     @staticmethod
-    def db_root_dir(dataset):
-        if dataset == 'pascal':
-            return '/path/to/datasets/VOCdevkit/VOC2012/'  # folder that contains VOCdevkit/.
-        elif dataset == 'sbd':
-            return '/path/to/datasets/benchmark_RELEASE/'  # folder that contains dataset/.
-        elif dataset == 'cityscapes':
-            return '/path/to/datasets/cityscapes/'     # foler that contains leftImg8bit/
-        elif dataset == 'coco':
-            return 'E:/data/coco/'
-        elif dataset == 'water':
-            return ['water/water_6/']
-            # return ['D:/Desktop/湛江/湛江港/image_P3/',
-            #         'D:/Desktop/湛江/湛江港/image_P4/',
-            #         'D:/Desktop/湛江/湛江港/image_P1/',
-            #         'D:/Desktop/湛江/湛江港/image_P2/']
-            # return ['E:/water_segment/water_4/']
-            # return ['D:/Desktop/60605600/']
+    def train_image_path():
+        # 训练数据集所在文件夹
+        return ['water/water_6/']
+    @staticmethod
+    def train_model_path():
+        # 用于训练的模型文件路径
+        return 'models/checkpoint.pth.tar'
 
-            # return ['D:/Desktop/湛江/湛江港/image_P3/','D:/Desktop/湛江/湛江港/image_P2/']
-        else:
-            print('Dataset {} not available.'.format(dataset))
-            raise NotImplementedError
+    @staticmethod
+    def test_image_path():
+        # 测试数据集所在文件夹
+        return ['water/water_6/']
+
+    @staticmethod
+    def test_model_path():
+        # 用于测试的模型文件路径
+        return 'models/checkpoint.pth.tar'
+
+    @staticmethod
+    def convert_model_path():
+        # 训练完成的模型文件路径
+        return 'models/checkpoint.pth.tar'
+
+    @staticmethod
+    def convert_save_path():
+        # 另存为pt文件
+        return 'test.pt'
+
+    @staticmethod
+    def train_batch_size():
+        # 训练批次
+        return 8
+
+    @staticmethod
+    def test_batch_size():
+        #测试批次
+        return 8
