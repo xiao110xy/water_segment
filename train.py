@@ -2,7 +2,10 @@ import argparse
 import os
 import numpy as np
 from tqdm import tqdm
+<<<<<<< HEAD
 import matplotlib.pyplot as plt
+=======
+>>>>>>> 39208a2ad451221cf846cb2e345626e7dab0f20f
 
 from mypath import Path
 from dataloaders import make_data_loader
